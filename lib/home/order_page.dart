@@ -225,6 +225,7 @@ class _OrderPageState extends State<OrderPage> {
                                 advancedAmount: order.advancedAmount,
                                 dueAmount: order.dueAmount,
                                 spcInstruction: order.specialInstruction,
+                                clothImage: order.clothPic,
                               ),
                             ),
                           );

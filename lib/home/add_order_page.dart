@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../colors.dart';
 import '../config.dart';
@@ -14,6 +17,7 @@ class AddOrderPage extends StatefulWidget {
       clientGender,
       clientAddress,
       clothId,
+      clothImage,
       clothCategoryId,
       clothCategoryPic,
       deliveryDate,
@@ -49,6 +53,7 @@ class AddOrderPage extends StatefulWidget {
       this.clientGender,
       this.clientAddress,
       this.clothId,
+      this.clothImage,
       this.clothCategoryId,
       this.clothCategoryPic,
       this.deliveryDate,
@@ -123,6 +128,25 @@ class _AddOrderPageState extends State<AddOrderPage> {
   var selectedCategoryPic = "";
   var dateFormat = DateFormat("dd-MMM-yyyy");
   var delShow = false;
+  final ImagePicker _imagePicker = ImagePicker();
+  String? base64String;
+  Object? clothImage;
+
+  Future<void> clothImagePicker() async {
+    final pickedImage = await _imagePicker.pickImage(
+        source: ImageSource.gallery, imageQuality: 80);
+
+    if (pickedImage != null) {
+      clothImage = await File(pickedImage.path).readAsBytes();
+
+      base64String = base64Encode(clothImage as Uint8List);
+      print(base64String);
+
+      setState(() {});
+    } else {
+      print("Image not picked.");
+    }
+  }
 
   static Future<List<CategoryObject>> getCategory() async {
     List<CategoryObject> category = [];
@@ -202,7 +226,7 @@ class _AddOrderPageState extends State<AddOrderPage> {
         "client_phone_number": phoneNoController.text.toString(),
         "cloth_id": clothIdController.text.toString(),
         "cloth_category_id": selectedCategoryId,
-        // "cloth_pic": phoneNoController.text,
+        "cloth_pic": base64String,
         "cloth_category_pic": selectedCategoryPic.toString(),
         "mark_urgent": _isUrgent,
         "measurement_dress_given": _isDressGiven,
@@ -297,6 +321,7 @@ class _AddOrderPageState extends State<AddOrderPage> {
       selectedCategoryPic = "";
       deliveryDate = "";
       reminderDate = "";
+      clothImage = "";
       totalAmountController.text = "";
       advanceAmountController.text = "";
       dueAmountController.text = "";
@@ -326,6 +351,7 @@ class _AddOrderPageState extends State<AddOrderPage> {
       clothIdController.text = widget.clothId?.toString() ?? "";
       clientGender = widget.clientGender?.toString() ?? "";
       clientAddressController.text = widget.clientAddress ?? "";
+      clothImage = widget.clothImage ?? "";
       _isUrgent = widget.isUrgent ?? false;
       _isDressGiven = widget.isDressGiven ?? false;
 
@@ -397,7 +423,7 @@ class _AddOrderPageState extends State<AddOrderPage> {
         "client_phone_number": phoneNoController.text.toString(),
         "cloth_id": clothIdController.text.toString(),
         "cloth_category_id": selectedCategoryId.toString(),
-        // "cloth_pic": phoneNoController.text,
+        "cloth_pic": base64String,
         "cloth_category_pic": selectedCategoryPic.toString(),
         "mark_urgent": _isUrgent,
         "measurement_dress_given": _isDressGiven,
@@ -518,6 +544,7 @@ class _AddOrderPageState extends State<AddOrderPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
       floatingActionButton: delShow == false
           ? Container()
@@ -543,7 +570,6 @@ class _AddOrderPageState extends State<AddOrderPage> {
               },
             ),
       backgroundColor: white,
-      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: blue,
@@ -1039,30 +1065,67 @@ class _AddOrderPageState extends State<AddOrderPage> {
                           ),
                         ],
                       ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Container(
-                            height: 70,
-                            width: 100,
-                            color: Colors.pink,
-                          ),
-                          Container(
-                            height: 70,
-                            width: 100,
-                            color: Colors.pink,
-                          ),
-                        ],
+                      GestureDetector(
+                        onTap: () {
+                          clothImagePicker();
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(
+                                top: 20,
+                              ),
+                              height: MediaQuery.of(context).size.width / 3,
+                              width: MediaQuery.of(context).size.width / 2,
+                              decoration: const BoxDecoration(
+                                color: Colors.grey,
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(30),
+                                ),
+                              ),
+                              child: clothImage != null
+                                  ? (clothImage is String
+                                      ? Image.network(clothImage.toString())
+                                      : Image.memory(clothImage as Uint8List))
+                                  : Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.add_a_photo,
+                                          size: MediaQuery.of(context)
+                                                  .size
+                                                  .width /
+                                              5,
+                                          color: Colors.white,
+                                        ),
+                                        const Text(
+                                          "Pick Cloth Image",
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: white,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                            ),
+                          ],
+                        ),
                       ),
-                      const Row(
+                      Row(
                         children: [
-                          Text(
-                            "Delivery Date :",
-                            textAlign: TextAlign.start,
-                            style: TextStyle(
-                              color: black,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                          Container(
+                            margin: const EdgeInsets.only(top: 20),
+                            child: const Text(
+                              "Delivery Date :",
+                              textAlign: TextAlign.start,
+                              style: TextStyle(
+                                color: black,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
